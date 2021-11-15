@@ -1,0 +1,49 @@
+plugins {
+    alias(libs.plugins.ksp) apply false
+    // https://youtrack.jetbrains.com/issue/KT-31643
+    alias(libs.plugins.android) apply false
+    alias(libs.plugins.nexus.publish)
+    base
+}
+
+group = "me.tatarka.inject.android"
+version = libs.versions.kotlin.inject.android.get()
+
+nexusPublishing {
+    repositories {
+        sonatype()
+    }
+}
+
+val testReport by tasks.registering(TestReport::class) {
+    destinationDir = buildDir.resolve("reports")
+}
+
+val copyTestResults by tasks.registering(Copy::class) {
+    destinationDir = buildDir.resolve("test-results")
+    includeEmptyDirs = false
+}
+
+val testReportApple by tasks.registering(TestReport::class) {
+    destinationDir = buildDir.resolve("reports")
+}
+
+val copyTestResultsApple by tasks.registering(Copy::class) {
+    destinationDir = buildDir.resolve("test-results")
+    includeEmptyDirs = false
+}
+
+val check by tasks.getting
+val checkApple by tasks.creating
+
+check.finalizedBy(testReport, copyTestResults)
+checkApple.finalizedBy(testReportApple, copyTestResultsApple)
+
+// Heavy-weight patch for this KGP+Gradle bug that can cause deadlocks
+// https://github.com/gradle/gradle/issues/17812
+// https://youtrack.jetbrains.com/issue/KT-47853
+allprojects {
+    tasks.withType<org.jetbrains.kotlin.gradle.internal.KaptWithoutKotlincTask> {
+        // realize all KaptWithoutKotlincTask tasks
+    }
+}
